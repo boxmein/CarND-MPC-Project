@@ -21,7 +21,9 @@ double rad2deg(double x) { return x * 180 / pi(); }
 /** Convert MPH to m/s. */
 double mphtoms(double mph) { return mph / 0.44704; }
 
-const double Lf = 2.67;
+constexpr double Lf = 2.67;
+constexpr int LATENCY_MS = 100;
+constexpr double LATENCY = LATENCY_MS / 1000;
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -78,8 +80,8 @@ Eigen::MatrixXd transformToLocal(double x, double y, double psi, vector<double> 
   Eigen::MatrixXd waypoints(2, ptsx.size());
   
   for (int i = 0; i < ptsx.size(); i++) {
-    waypoints(0, i) =   (ptsx[i] - x) * cos(psi) + (ptsy[i] - y) * sin(psi);
-    waypoints(1, i) = - (ptsx[i] - x) * sin(psi) + (ptsy[i] - y) * cos(psi);
+    waypoints(0, i) =   (ptsx[i] - x) * cos(-psi) - (ptsy[i] - y) * sin(-psi);
+    waypoints(1, i) =   (ptsx[i] - x) * sin(-psi) + (ptsy[i] - y) * cos(-psi);
   }
   
   return waypoints;
@@ -109,8 +111,8 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-          // double delta = j[1]["steering_angle"];
-          // double a = j[1]["throttle"];
+          double delta = j[1]["steering_angle"];
+          double a = j[1]["throttle"];
           
           // j[1] is the data JSON object
           vector<double> ptx = j[1]["ptsx"];
@@ -128,20 +130,15 @@ int main() {
           
           Eigen::VectorXd state(6);
           
-          // psi = - v * delta / Lf * .1;
-          // px = v * cos(psi) * .1;
-          // py = v * sin(psi) * .1;
-          // v  += a * .1;
+          // state << 0, 0, 0, v, cte, eps;
           
-          // state << px,
-          //          py,
-          //          psi,
-          //          v,
-          //          cte,
-          //          eps;
-          //
-          
-          state << 0, 0, 0, v, cte, eps;
+          state <<
+              v * cos(0) * LATENCY,
+              v * sin(0) * LATENCY,
+              - v * (delta / Lf) * LATENCY,
+              v + (a * LATENCY),
+              cte - (v * sin(eps) * LATENCY),
+              eps - (v * (delta / Lf) * LATENCY);
           
           Solution sol  = mpc.Solve(state, coeffs);
           auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start);
@@ -153,7 +150,7 @@ int main() {
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
           
           // Note: Unity positive angles are clockwise from xaxis, but maths is ccw
-          msgJson["steering_angle"] = - sol.steer / 0.436332;
+          msgJson["steering_angle"] = sol.steer / 0.436332;
           msgJson["throttle"] = sol.accel;
 
           //Display the MPC predicted trajectory
@@ -195,7 +192,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          // this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(LATENCY_MS));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {

@@ -80,8 +80,8 @@ class FG_eval {
     
     // Punish large CTE and Epsi, and deviation from reference velocity
     for (int t = 0; t < N; t++) {
-      fg[0] += CppAD::pow(vars[cte_first + t], 2);
-      fg[0] += CppAD::pow(vars[eps_first + t], 2);
+      fg[0] += 500 * CppAD::pow(vars[cte_first + t], 2);
+      fg[0] += 500 * CppAD::pow(vars[eps_first + t], 2);
       fg[0] += CppAD::pow(vars[v_first + t] - Vref, 2);
     }
     
@@ -93,8 +93,9 @@ class FG_eval {
     
     // Punish large differences between consecutive actuator movements
     for (int t = 0; t < N - 2; t++) {
-      fg[0] += 20 * CppAD::pow(vars[delta_first + t + 1] - vars[delta_first + t], 2);
-      fg[0] += 20 * CppAD::pow(vars[a_first + t + 1] - vars[a_first + t], 2);
+      fg[0] += 100 * CppAD::pow(vars[delta_first + t + 1] - vars[delta_first + t], 2);
+      fg[0] += 100 * CppAD::pow(vars[a_first + t + 1] - vars[a_first + t], 2);
+      fg[0] += 300 * CppAD::pow(vars[delta_first + t] * vars[v_first + t], 2);
     }
     // TL;DR: make a huge 2d matrix of initial states, and auto-solvable functions for further states.
     
@@ -135,13 +136,13 @@ class FG_eval {
       // 0 = y1 - (x0 + v0 cos(psi0) dt);
       fg[y_first + t+1] = y_1 - (y_0 + v_0 * CppAD::sin(psi_0) * dt);
       // 0 = psi1 - psi0 + v0/Lf deltat dt
-      fg[psi_first + t+1] = psi_1 - (psi_0 + v_0 / Lf * delta_0 * dt);
+      fg[psi_first + t+1] = psi_1 - (psi_0 - v_0 / Lf * delta_0 * dt);
       // 0 = v1 - at dt
       fg[v_first + t+1] = v_1 - (v_0 + a_0 * dt);
       // 0 = cte1 - (f(x0) - y0 + v0 * sin(epsi0) * dt)
       fg[cte_first + t+1] = cte_1 - ( (f_0 - y_0) + v_0 * CppAD::sin(eps_0) * dt);
       // 0 = psi0 - psidesired0 + v0 delta0/Lf dt
-      fg[eps_first + t+1] = eps_1 - (psi_0 - psi_desired + v_0 * delta_0 / Lf * dt);
+      fg[eps_first + t+1] = eps_1 - (psi_0 - psi_desired - v_0 * delta_0 / Lf * dt);
     }
   }
 };
