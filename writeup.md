@@ -73,9 +73,9 @@ After solving the model, the predicted steering angle in degrees is converted in
 The simulator car stays on the road for the entire lap, and doesn't oscillate. It slows down near
 steeper curves.
 
-[Video of it driving (WIP)]()
+[Video of it driving](https://youtu.be/Ktq3pD4UUy8)
 
-[Video of it crashing (WIP)]()
+[Video of it crashing in dev](https://youtu.be/3_bsoOeOyf4)
 
 ## Example run
 
