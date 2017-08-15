@@ -4,6 +4,9 @@ This project was really interesting while also being challenging, since it was t
 that I was most thrown off the cliff with. I'll discuss rubric points here and go into
 detail about my implementation.
 
+I'm really grateful to my mentor Saurabh and the community for helping me iron out the last
+few kinks in the project.
+
 ![lol](writeup/generic1.png)
 
 ## The Model
